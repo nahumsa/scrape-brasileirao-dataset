@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+bs4 = "*"
+requests = "*"
+pydantic = "*"
+pandas = "*"
+
+[dev-packages]
+types-beautifulsoup4 = "*"
+types-requests = "*"
+
+[requires]
+python_version = "3.10"
