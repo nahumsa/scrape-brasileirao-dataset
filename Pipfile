@@ -12,6 +12,7 @@ pandas = "*"
 [dev-packages]
 types-beautifulsoup4 = "*"
 types-requests = "*"
+ipython = "*"
 
 [requires]
 python_version = "3.10"
