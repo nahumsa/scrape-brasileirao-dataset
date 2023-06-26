@@ -1,4 +1,5 @@
 import re
+from enum import Enum
 
 import pandas as pd
 import requests
@@ -33,16 +34,62 @@ home_score, away_score = get_numbers_from_string(home_score), get_numbers_from_s
 print(home_team, home_score)
 print(away_team, away_score)
 
-div_table = soup.find("div", "Table__Scroller")
-if div_table:
-    table = div_table.find("table")
-    data = []
-    if table:
-        rows = table.find_all("tr")
-        for row in rows:
-            columns = row.find_all("td")
-            if columns:
-                row_data = [column.text.strip() for column in columns]
-                data.append(row_data)
-df = pd.DataFrame(data, columns=["casa", "nome", "fora"])
-print(df)
+
+def get_stats_table(
+    columns_name: list[str] = ["home", "stat_name", "away"]
+) -> pd.DataFrame:
+    div_table = soup.find("div", "Table__Scroller")
+    if div_table:
+        table = div_table.find("table")
+        data = []
+        if table:
+            rows = table.find_all("tr")  # noqa
+            for row in rows:
+                columns = row.find_all("td")
+                if columns:
+                    row_data = [column.text.strip() for column in columns]
+                    data.append(row_data)
+    return pd.DataFrame(data, columns=columns_name)
+
+
+df = get_stats_table()
+
+
+class TeamFieldCommandEnum(str, Enum):
+    HOME: str = "home"
+    AWAY: str = "away"
+
+
+def get_possesion_stats(team_field_command: TeamFieldCommandEnum) -> int:
+    possession_scraped_string: str = soup.find(  # noqa
+        "div", class_=f"Possession__stat Possession__stat--{team_field_command.value}"
+    ).text
+
+    try:
+        possesion = re.findall(r"\d+", possession_scraped_string)[0]
+
+        return int(possesion)
+
+    except IndexError as error:
+        raise IndexError("The format for the possession changed") from error
+
+
+print(get_possesion_stats(TeamFieldCommandEnum.HOME))
+print(get_possesion_stats(TeamFieldCommandEnum.AWAY))
+
+
+def get_shot_stats(team_field_command: TeamFieldCommandEnum) -> tuple[int, int]:
+    shots_scraped_string: str = soup.find(  # noqa
+        "div", class_=f"Shots__col__target Shots__col__target--{team_field_command}"
+    ).text
+    try:
+        kicks, kicks_on_goal = re.findall(r"\d+", shots_scraped_string)
+
+    except IndexError as error:
+        raise IndexError("The format for the kick attempts changed") from error
+
+    return int(kicks), int(kicks_on_goal)
+
+
+print(get_shot_stats(TeamFieldCommandEnum.HOME))
+print(get_shot_stats(TeamFieldCommandEnum.AWAY))
