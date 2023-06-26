@@ -5,11 +5,21 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
-url = "https://www.espn.com.br/futebol/partida/_/jogoId/665923"
+url = "https://www.espn.com.br/futebol/partida/_/jogoId/665914"
 response = requests.get(url)
 html_content = response.content
 
 soup = BeautifulSoup(html_content, "html.parser")
+
+
+def get_numbers_from_string(text: str) -> int:
+    try:
+        return int(re.findall(r"\d+", text)[0])
+    except IndexError as error:
+        raise IndexError(f"It was not possible to get numbers from {text}") from error
+    except ValueError as error:
+        raise ValueError(f"There is no number in {text}") from error
+
 
 teams = soup.find_all(
     "h2", class_="ScoreCell__TeamName ScoreCell__TeamName--displayName truncate db"
@@ -23,9 +33,6 @@ scores = soup.find_all(
 )
 
 home_score, away_score = [element.text for element in scores]
-
-
-get_numbers_from_string = lambda text: re.findall(r"\d+", text)[0]
 
 home_score, away_score = get_numbers_from_string(home_score), get_numbers_from_string(
     away_score
