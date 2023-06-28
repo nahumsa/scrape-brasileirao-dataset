@@ -21,25 +21,26 @@ def get_numbers_from_string(text: str) -> int:
         raise ValueError(f"There is no number in {text}") from error
 
 
-teams = soup.find_all(
-    "h2", class_="ScoreCell__TeamName ScoreCell__TeamName--displayName truncate db"
-)
+def get_team_names_from_match() -> tuple[int, int]:
+    teams = soup.find_all(
+        "h2", class_="ScoreCell__TeamName ScoreCell__TeamName--displayName truncate db"
+    )
 
-home_team, away_team = [element.text for element in teams]
+    home_team, away_team = [element.text for element in teams]
+    return home_team, away_team
 
-scores = soup.find_all(
-    "div",
-    class_="Gamestrip__ScoreContainer flex flex-column items-center justify-center relative",  # noqa
-)
 
-home_score, away_score = [element.text for element in scores]
+def get_score_from_match() -> tuple[int, int]:
+    scores = soup.find_all(
+        "div",
+        class_="Gamestrip__ScoreContainer flex flex-column items-center justify-center relative",  # noqa
+    )
 
-home_score, away_score = get_numbers_from_string(home_score), get_numbers_from_string(
-    away_score
-)
+    home_score, away_score = [element.text for element in scores]
 
-print(home_team, home_score)
-print(away_team, away_score)
+    home_score = get_numbers_from_string(home_score)
+    away_score = get_numbers_from_string(away_score)
+    return home_score, away_score
 
 
 def get_stats_table(
