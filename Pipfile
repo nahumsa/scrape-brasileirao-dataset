@@ -8,11 +8,15 @@ bs4 = "*"
 requests = "*"
 pydantic = "*"
 pandas = "*"
+dagster = "*"
+dagit = "*"
 
 [dev-packages]
 types-beautifulsoup4 = "*"
 types-requests = "*"
 ipython = "*"
+pyright = "*"
+ruff = "*"
 
 [requires]
 python_version = "3.10"
