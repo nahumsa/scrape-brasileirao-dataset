@@ -15,8 +15,10 @@ soup = BeautifulSoup(html_content, "html.parser")
 def get_numbers_from_string(text: str) -> int:
     try:
         return int(re.findall(r"\d+", text)[0])
+
     except IndexError as error:
         raise IndexError(f"It was not possible to get numbers from {text}") from error
+
     except ValueError as error:
         raise ValueError(f"There is no number in {text}") from error
 

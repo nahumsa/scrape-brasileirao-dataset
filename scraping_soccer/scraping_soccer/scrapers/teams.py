@@ -5,11 +5,11 @@ import requests
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
-from ..utils.converters import convert_basemodel_to_df
-
 BASE_URL = "https://www.espn.com.br"
 LEAGUE_URL_PATH = "/soccer/teams/_/league/"
 
+def convert_basemodel_to_df(model_list: list[BaseModel]) -> pd.DataFrame:
+    return pd.DataFrame([model.dict() for model in model_list])
 
 class Team(BaseModel):
     team_id: int
@@ -43,6 +43,7 @@ def scrape(league_name: str) -> pd.DataFrame:
     league_url = BASE_URL + LEAGUE_URL_PATH + league_name
     all_link_teams = get_team_page_url_set(league_url)
     team_data_list: list[Team] = []
+
     for team_link in all_link_teams:
         team_data_list.append(extract_data_from_url(team_link))
 
