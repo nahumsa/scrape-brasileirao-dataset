@@ -17,6 +17,7 @@ types-requests = "*"
 ipython = "*"
 pyright = "*"
 ruff = "*"
+pandas-stubs = "*"
 
 [requires]
 python_version = "3.10"
