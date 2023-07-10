@@ -5,12 +5,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
-url = "https://www.espn.com.br/futebol/partida/_/jogoId/665914"
-response = requests.get(url)
-html_content = response.content
-
-soup = BeautifulSoup(html_content, "html.parser")
-
+BASE_URL = "https://www.espn.com.br"
 
 def get_numbers_from_string(text: str) -> int:
     try:
@@ -23,7 +18,7 @@ def get_numbers_from_string(text: str) -> int:
         raise ValueError(f"There is no number in {text}") from error
 
 
-def get_team_names_from_match() -> tuple[int, int]:
+def get_team_names_from_match(soup: BeautifulSoup) -> tuple[int, int]:
     teams = soup.find_all(
         "h2", class_="ScoreCell__TeamName ScoreCell__TeamName--displayName truncate db"
     )
@@ -32,7 +27,7 @@ def get_team_names_from_match() -> tuple[int, int]:
     return home_team, away_team
 
 
-def get_score_from_match() -> tuple[int, int]:
+def get_score_from_match(soup: BeautifulSoup) -> tuple[int, int]:
     scores = soup.find_all(
         "div",
         class_="Gamestrip__ScoreContainer flex flex-column items-center justify-center relative",  # noqa
@@ -46,7 +41,7 @@ def get_score_from_match() -> tuple[int, int]:
 
 
 def get_stats_table(
-    columns_name: list[str] = ["home", "stat_name", "away"]
+    soup: BeautifulSoup, columns_name: list[str] = ["home", "stat_name", "away"]
 ) -> pd.DataFrame:
     div_table = soup.find("div", "Table__Scroller")
     if div_table:
@@ -62,15 +57,12 @@ def get_stats_table(
     return pd.DataFrame(data, columns=columns_name)
 
 
-df = get_stats_table()
-
-
 class TeamFieldCommandEnum(str, Enum):
     HOME: str = "home"
     AWAY: str = "away"
 
 
-def get_possesion_stats(team_field_command: TeamFieldCommandEnum) -> int:
+def get_possesion_stats(soup: BeautifulSoup, team_field_command: TeamFieldCommandEnum) -> int:
     possession_scraped_string: str = soup.find(  # noqa
         "div", class_=f"Possession__stat Possession__stat--{team_field_command.value}"
     ).text
@@ -84,11 +76,7 @@ def get_possesion_stats(team_field_command: TeamFieldCommandEnum) -> int:
         raise IndexError("The format for the possession changed") from error
 
 
-print(get_possesion_stats(TeamFieldCommandEnum.HOME))
-print(get_possesion_stats(TeamFieldCommandEnum.AWAY))
-
-
-def get_shot_stats(team_field_command: TeamFieldCommandEnum) -> tuple[int, int]:
+def get_shot_stats(soup: BeautifulSoup, team_field_command: TeamFieldCommandEnum) -> tuple[int, int]:
     shots_scraped_string: str = soup.find(  # noqa
         "div", class_=f"Shots__col__target Shots__col__target--{team_field_command}"
     ).text
@@ -100,6 +88,43 @@ def get_shot_stats(team_field_command: TeamFieldCommandEnum) -> tuple[int, int]:
 
     return int(kicks), int(kicks_on_goal)
 
+def scrape(match_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
+    match_url = f"/futebol/partida/_/jogoId/{match_id}"
+    response = requests.get(BASE_URL  + match_url)
+    html_content = response.content
 
-print(get_shot_stats(TeamFieldCommandEnum.HOME))
-print(get_shot_stats(TeamFieldCommandEnum.AWAY))
+    soup = BeautifulSoup(html_content, "html.parser")
+
+    base_stats = get_stats_table(soup)
+    possession_df = pd.DataFrame(
+        [{"home": get_possesion_stats(soup, TeamFieldCommandEnum.HOME), "stat_name": "posse", "away": get_possesion_stats(soup, TeamFieldCommandEnum.AWAY)}]
+        )
+    shots_df = pd.DataFrame(
+        [
+            {"home": get_shot_stats(soup, TeamFieldCommandEnum.HOME)[0], "stat_name": "chutes", "away": get_shot_stats(soup, TeamFieldCommandEnum.AWAY)[0]},
+            {"home": get_shot_stats(soup, TeamFieldCommandEnum.HOME)[1], "stat_name": "chutes no gol", "away": get_shot_stats(soup, TeamFieldCommandEnum.AWAY)[1]},
+         ]
+        )
+    base_stats = pd.concat([base_stats, possession_df, shots_df])
+    home_team_name, away_team_name = get_team_names_from_match(soup)
+    home_score, away_score = get_score_from_match(soup)
+    match_info_df = pd.DataFrame([
+        {"team": home_team_name, "field_command": "home", "score": home_score},
+        {"team": away_team_name, "field_command": "away", "score": away_score},
+                  ])
+
+    away_stats_df = base_stats[["stat_name", "away"]]
+    away_stats_df = away_stats_df.rename(columns={"away": "stat_value"})
+    away_stats_df["team"] = away_team_name
+
+    home_stats_df = base_stats[["stat_name", "home"]]
+    home_stats_df = home_stats_df.rename(columns={"home": "stat_value"})
+    home_stats_df["team"] = home_team_name
+    all_stats_df = pd.concat([home_stats_df, away_stats_df])
+
+    return all_stats_df, match_info_df
+
+
+if __name__ == "__main__":
+    match_id = 665914
+    scrape(match_id)

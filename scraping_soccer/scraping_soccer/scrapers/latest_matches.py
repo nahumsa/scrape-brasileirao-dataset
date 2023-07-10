@@ -9,7 +9,7 @@ def extract_match_ids(relative_url: str) -> int:
     match_id = relative_url.split("/")[-1]
     return int(match_id)
 
-def get_latest_matches(team_id: int, league_name: str, season: int) -> pd.DataFrame:
+def scrape(team_id: int, league_name: str, season: int) -> pd.DataFrame:
     results_url = (
         f"/futebol/time/resultados/_/id/{team_id}/liga/{league_name}/temporada/{season}"
     )
@@ -28,7 +28,7 @@ def get_latest_matches(team_id: int, league_name: str, season: int) -> pd.DataFr
 
     for link in links:
         match_url = link.get("href")
-
+        # TODO: remove duplicated entries
         team_match_list.append(
             {
                 "url": BASE_URL +  match_url,
@@ -36,8 +36,9 @@ def get_latest_matches(team_id: int, league_name: str, season: int) -> pd.DataFr
                 "team_id": team_id
             }
             )
-
-    return pd.DataFrame(team_match_list)
+    matches_df = pd.DataFrame(team_match_list)
+    matches_df = matches_df.drop_duplicates().reset_index(drop=True)
+    return matches_df
 
 
 
@@ -45,5 +46,5 @@ if __name__ == "__main__":
     team_id = 6154
     LEAGUE_NAME = "bra.1"
     SEASON = 2023
-    all_link_results = get_latest_matches(team_id=team_id, league_name=LEAGUE_NAME, season=SEASON)
-    print(all_link_results)
+    matches_df = scrape(team_id=team_id, league_name=LEAGUE_NAME, season=SEASON)
+    print(matches_df)
