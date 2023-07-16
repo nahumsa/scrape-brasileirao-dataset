@@ -1,7 +1,8 @@
 import time
 
 import pandas as pd
-from dagster import AssetOut, Output, asset, get_dagster_logger, multi_asset
+from dagster import (AssetIn, AssetOut, Output, asset, get_dagster_logger,
+                     multi_asset)
 
 import scraping_soccer.scrapers.teams as teams
 from scraping_soccer.scrapers import latest_matches, match_statistics
@@ -13,13 +14,25 @@ SEASON = 2023
 logger = get_dagster_logger()
 
 
-@asset
+@asset(
+    io_manager_key="postgres_io_manager_raw_soccer", metadata={"table": "teams_info"}
+)
 def teams_info() -> Output:
     teams_df = teams.scrape(LEAGUE_NAME)
     return Output(value=teams_df, metadata={"num_entries": len(teams_df)})
 
 
-@asset
+@asset(
+    io_manager_key="postgres_io_manager_raw_soccer",
+    ins={
+        "teams_info": AssetIn(
+            metadata={"input_query": "SELECT team_id, name FROM teams_info"}
+        )
+    },
+    metadata={
+        "table": "teams_matches",
+    },
+)
 def teams_matches(teams_info: pd.DataFrame) -> Output:
     all_teams_matches_df = pd.DataFrame()
 
@@ -41,7 +54,21 @@ def teams_matches(teams_info: pd.DataFrame) -> Output:
 
 
 @multi_asset(
-    outs={"extract_matches_statistics": AssetOut(), "extract_matches_info": AssetOut()}
+    ins={
+        "teams_matches": AssetIn(
+            metadata={"input_query": "SELECT match_id FROM teams_matches"}
+        )
+    },
+    outs={
+        "matches_statistics": AssetOut(
+            io_manager_key="postgres_io_manager_raw_soccer",
+            metadata={"table": "matches_statistics"},
+        ),
+        "matches_info": AssetOut(
+            io_manager_key="postgres_io_manager_raw_soccer",
+            metadata={"table": "matches_info"},
+        ),
+    },
 )
 def extract_matches_statistics_and_info(
     teams_matches: pd.DataFrame,
@@ -59,23 +86,3 @@ def extract_matches_statistics_and_info(
         time.sleep(1)
 
     return all_matches_statistics_df, all_match_info_df
-
-
-@asset
-def matches_statistics(extract_matches_statistics: pd.DataFrame) -> Output:
-    return Output(
-        value=extract_matches_statistics,
-        metadata={
-            "num_records": len(extract_matches_statistics),
-        },
-    )
-
-
-@asset
-def matches_info(extract_matches_info: pd.DataFrame) -> Output:
-    return Output(
-        value=extract_matches_info,
-        metadata={
-            "num_records": len(extract_matches_info),
-        },
-    )

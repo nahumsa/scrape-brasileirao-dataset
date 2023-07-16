@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 
 BASE_URL = "https://www.espn.com.br"
 
+
 def get_numbers_from_string(text: str) -> int:
     try:
         return int(re.findall(r"\d+", text)[0])
@@ -62,7 +63,9 @@ class TeamFieldCommandEnum(str, Enum):
     AWAY: str = "away"
 
 
-def get_possesion_stats(soup: BeautifulSoup, team_field_command: TeamFieldCommandEnum) -> int:
+def get_possesion_stats(
+    soup: BeautifulSoup, team_field_command: TeamFieldCommandEnum
+) -> int:
     possession_scraped_string: str = soup.find(  # noqa
         "div", class_=f"Possession__stat Possession__stat--{team_field_command.value}"
     ).text
@@ -76,7 +79,9 @@ def get_possesion_stats(soup: BeautifulSoup, team_field_command: TeamFieldComman
         raise IndexError("The format for the possession changed") from error
 
 
-def get_shot_stats(soup: BeautifulSoup, team_field_command: TeamFieldCommandEnum) -> tuple[int, int]:
+def get_shot_stats(
+    soup: BeautifulSoup, team_field_command: TeamFieldCommandEnum
+) -> tuple[int, int]:
     shots_scraped_string: str = soup.find(  # noqa
         "div", class_=f"Shots__col__target Shots__col__target--{team_field_command}"
     ).text
@@ -88,30 +93,47 @@ def get_shot_stats(soup: BeautifulSoup, team_field_command: TeamFieldCommandEnum
 
     return int(kicks), int(kicks_on_goal)
 
+
 def scrape(match_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     match_url = f"/futebol/partida/_/jogoId/{match_id}"
-    response = requests.get(BASE_URL  + match_url)
+    response = requests.get(BASE_URL + match_url)
     html_content = response.content
 
     soup = BeautifulSoup(html_content, "html.parser")
 
     base_stats = get_stats_table(soup)
     possession_df = pd.DataFrame(
-        [{"home": get_possesion_stats(soup, TeamFieldCommandEnum.HOME), "stat_name": "posse", "away": get_possesion_stats(soup, TeamFieldCommandEnum.AWAY)}]
-        )
+        [
+            {
+                "home": get_possesion_stats(soup, TeamFieldCommandEnum.HOME),
+                "stat_name": "posse",
+                "away": get_possesion_stats(soup, TeamFieldCommandEnum.AWAY),
+            }
+        ]
+    )
     shots_df = pd.DataFrame(
         [
-            {"home": get_shot_stats(soup, TeamFieldCommandEnum.HOME)[0], "stat_name": "chutes", "away": get_shot_stats(soup, TeamFieldCommandEnum.AWAY)[0]},
-            {"home": get_shot_stats(soup, TeamFieldCommandEnum.HOME)[1], "stat_name": "chutes no gol", "away": get_shot_stats(soup, TeamFieldCommandEnum.AWAY)[1]},
-         ]
-        )
+            {
+                "home": get_shot_stats(soup, TeamFieldCommandEnum.HOME)[0],
+                "stat_name": "chutes",
+                "away": get_shot_stats(soup, TeamFieldCommandEnum.AWAY)[0],
+            },
+            {
+                "home": get_shot_stats(soup, TeamFieldCommandEnum.HOME)[1],
+                "stat_name": "chutes no gol",
+                "away": get_shot_stats(soup, TeamFieldCommandEnum.AWAY)[1],
+            },
+        ]
+    )
     base_stats = pd.concat([base_stats, possession_df, shots_df])
     home_team_name, away_team_name = get_team_names_from_match(soup)
     home_score, away_score = get_score_from_match(soup)
-    match_info_df = pd.DataFrame([
-        {"team": home_team_name, "field_command": "home", "score": home_score},
-        {"team": away_team_name, "field_command": "away", "score": away_score},
-                  ])
+    match_info_df = pd.DataFrame(
+        [
+            {"team": home_team_name, "field_command": "home", "score": home_score},
+            {"team": away_team_name, "field_command": "away", "score": away_score},
+        ]
+    )
 
     away_stats_df = base_stats[["stat_name", "away"]]
     away_stats_df = away_stats_df.rename(columns={"away": "stat_value"})
@@ -121,6 +143,8 @@ def scrape(match_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     home_stats_df = home_stats_df.rename(columns={"home": "stat_value"})
     home_stats_df["team"] = home_team_name
     all_stats_df = pd.concat([home_stats_df, away_stats_df])
+    all_stats_df["match_id"] = match_id
+    match_info_df["match_id"] = match_id
 
     return all_stats_df, match_info_df
 
