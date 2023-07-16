@@ -10,6 +10,8 @@ pydantic = "*"
 pandas = "*"
 dagster = "*"
 dagit = "*"
+psycopg2 = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 types-beautifulsoup4 = "*"
