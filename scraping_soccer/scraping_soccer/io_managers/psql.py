@@ -13,9 +13,11 @@ class PostgresIOManager(IOManager):
 
     def load_input(self, context: InputContext):
         try:
-            query = context.metadata["input_query"]
+            query = context.metadata["input_query"]  # type: ignore
         except KeyError as error:
-            raise ValueError("You must define a `input_query` in your asset.")
+            raise ValueError(
+                "You must define a `input_query` in your asset."
+            ) from error
         engine = create_engine(self.conn_string)
         df = pd.read_sql(query, engine)
         return df
@@ -23,7 +25,7 @@ class PostgresIOManager(IOManager):
     def handle_output(self, context: OutputContext, obj: Any):
         if isinstance(obj, DataFrame):
             try:
-                table = context.metadata["table"]
+                table = context.metadata["table"]  # type: ignore
 
             except KeyError as error:
                 raise ValueError("Table name not provided in metadata") from error
