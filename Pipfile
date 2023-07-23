@@ -12,6 +12,7 @@ dagster = "*"
 dagit = "*"
 psycopg2 = "*"
 psycopg2-binary = "*"
+dbt-postgres = "*"
 
 [dev-packages]
 types-beautifulsoup4 = "*"
