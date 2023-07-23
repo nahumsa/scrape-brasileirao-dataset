@@ -29,8 +29,9 @@ class PostgresIOManager(IOManager):
 
             except KeyError as error:
                 raise ValueError("Table name not provided in metadata") from error
+
             engine = create_engine(self.conn_string)
-            obj.to_sql(table, engine, if_exists="replace")
+            obj.to_sql(table, engine, index=False, if_exists="replace")
 
         else:
             raise ValueError("Object type not supported by PostgresIOManager")
