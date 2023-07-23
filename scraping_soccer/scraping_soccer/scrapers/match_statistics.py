@@ -150,5 +150,14 @@ def scrape(match_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 if __name__ == "__main__":
-    match_id = 665914
-    scrape(match_id)
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+
+    all_matches_id = [665914] * 3
+    with ProcessPoolExecutor() as executor:
+        # Submit the tasks to the executor
+        futures = [executor.submit(scrape, match_id) for match_id in all_matches_id]
+
+        # Wait for all tasks to complete and get the results
+        results = [future.result() for future in as_completed(futures)]
+
+        print(results)
