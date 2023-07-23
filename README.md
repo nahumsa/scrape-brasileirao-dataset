@@ -16,8 +16,8 @@ Vamos utilizar uma database PostGRESQL para guardar os dados que vão ser retira
 ```mermaid
 erDiagram
     TEAMS_INFO ||--o{ TEAMS_MATCHES : has
-    TEAMS_MATCHES ||--|{ MATCH_STATS : has
-    TEAMS_MATCHES ||--|{ MATCH_INFO : has
+    TEAMS_MATCHES ||--|{ MATCHES_STATS : has
+    TEAMS_MATCHES ||--|{ MATCHES_INFO : has
     TEAMS_INFO {
         bigint id
         bigint team_id[fk]
@@ -29,14 +29,14 @@ erDiagram
         int match_id[fk]
         int team_id[fk]
     }
-    MATCH_INFO {
+    MATCHES_INFO {
         int id
         int match_id[fk]
         string team
         string field_command
         int score
     }
-    MATCH_STATS {
+    MATCHES_STATS {
         int id
         int match_id[fk]
         string team
