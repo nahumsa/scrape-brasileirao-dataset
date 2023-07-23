@@ -1,4 +1,5 @@
 import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import pandas as pd
 from dagster import (AssetIn, AssetOut, Output, asset, get_dagster_logger,
@@ -15,11 +16,14 @@ logger = get_dagster_logger()
 
 
 @asset(
-    io_manager_key="postgres_io_manager_raw_soccer", metadata={"table": "teams_info"}
+    io_manager_key="postgres_io_manager_raw_soccer", metadata={"table": "TEAMS_INFO"}
 )
 def teams_info() -> Output:
     teams_df = teams.scrape(LEAGUE_NAME)
-    return Output(value=teams_df, metadata={"num_entries": len(teams_df)})
+    return Output(
+        value=teams_df,
+        metadata={"num_entries": len(teams_df), "columns": list(teams_df.columns)},
+    )
 
 
 @asset(
@@ -30,7 +34,7 @@ def teams_info() -> Output:
         )
     },
     metadata={
-        "table": "teams_matches",
+        "table": "TEAMS_MATCHES",
     },
 )
 def teams_matches(teams_info: pd.DataFrame) -> Output:
@@ -49,6 +53,7 @@ def teams_matches(teams_info: pd.DataFrame) -> Output:
         metadata={
             "num_records": len(all_teams_matches_df),
             "unique_matches": all_teams_matches_df["match_id"].nunique(),
+            "columns": list(all_teams_matches_df.columns),
         },
     )
 
@@ -62,27 +67,45 @@ def teams_matches(teams_info: pd.DataFrame) -> Output:
     outs={
         "matches_statistics": AssetOut(
             io_manager_key="postgres_io_manager_raw_soccer",
-            metadata={"table": "matches_statistics"},
+            metadata={"table": "MATCHES_STATISTICS"},
         ),
         "matches_info": AssetOut(
             io_manager_key="postgres_io_manager_raw_soccer",
-            metadata={"table": "matches_info"},
+            metadata={"table": "MATCHES_INFO"},
         ),
     },
 )
 def extract_matches_statistics_and_info(
     teams_matches: pd.DataFrame,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    all_matches_statistics_df = pd.DataFrame()
-    all_match_info_df = pd.DataFrame()
+) -> tuple[Output, Output]:
+    all_matches_id = teams_matches["match_id"].unique()
 
-    for match_id in teams_matches["match_id"].unique():
-        logger.info(f"Getting latest matches statistics for {match_id}")
-        match_statistics_df, match_info_df = match_statistics.scrape(match_id=match_id)
-        all_matches_statistics_df = pd.concat(
-            [all_matches_statistics_df, match_statistics_df]
-        )
-        all_match_info_df = pd.concat([all_match_info_df, match_info_df])
-        time.sleep(1)
+    with ProcessPoolExecutor() as executor:
+        # Submit the tasks to the executor
+        futures = [
+            executor.submit(match_statistics.scrape, match_id)
+            for match_id in all_matches_id
+        ]
 
-    return all_matches_statistics_df, all_match_info_df
+        # Wait for all tasks to complete and get the results
+        results = [future.result() for future in as_completed(futures)]
+
+    match_statistics_df = pd.concat([results_list[0] for results_list in results])
+    match_info_df = pd.concat([results_list[1] for results_list in results])
+
+    return (
+        Output(
+            value=match_statistics_df,
+            metadata={
+                "num_records": len(match_statistics_df),
+                "columns": list(match_statistics_df.columns),
+            },
+        ),
+        Output(
+            value=match_info_df,
+            metadata={
+                "num_records": len(match_info_df),
+                "columns": list(match_info_df.columns),
+            },
+        ),
+    )
