@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw_data
+    database: raw_soccer
+    tables:
+      - name: teams_info
+        identifier: teams_info
+      - name: teams_matches
+        identifier: teams_matches
+      - name: matches_stats 
+        identifier: matches_stats
+      - name: matches_info 
+        identifier: matches_info
