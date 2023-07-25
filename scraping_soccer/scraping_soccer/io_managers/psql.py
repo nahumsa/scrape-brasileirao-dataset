@@ -20,18 +20,27 @@ class PostgresIOManager(IOManager):
             ) from error
         engine = create_engine(self.conn_string)
         df = pd.read_sql(query, engine)
+        engine.dispose()
         return df
 
     def handle_output(self, context: OutputContext, obj: Any):
         if isinstance(obj, DataFrame):
             try:
                 table = context.metadata["table"]  # type: ignore
+                schema = context.metadata["schema"]  # type: ignore
 
             except KeyError as error:
                 raise ValueError("Table name not provided in metadata") from error
 
             engine = create_engine(self.conn_string)
-            obj.to_sql(table, engine, index=False, if_exists="replace")
+            obj.to_sql(
+                name=table,
+                con=engine,
+                schema=schema,
+                index=False,
+                if_exists="replace",
+            )
+            engine.dispose()
 
         else:
             raise ValueError("Object type not supported by PostgresIOManager")

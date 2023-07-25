@@ -16,7 +16,8 @@ logger = get_dagster_logger()
 
 
 @asset(
-    io_manager_key="postgres_io_manager_raw_soccer", metadata={"table": "teams_info"}
+    io_manager_key="postgres_io_manager_raw_soccer",
+    metadata={"table": "teams_info", "schema": "raw_data"},
 )
 def teams_info() -> Output:
     teams_df = teams.scrape(LEAGUE_NAME)
@@ -30,12 +31,10 @@ def teams_info() -> Output:
     io_manager_key="postgres_io_manager_raw_soccer",
     ins={
         "teams_info": AssetIn(
-            metadata={"input_query": "SELECT team_id, name FROM teams_info"}
+            metadata={"input_query": "SELECT team_id, name FROM raw_data.teams_info"}
         )
     },
-    metadata={
-        "table": "teams_matches",
-    },
+    metadata={"table": "teams_matches", "schema": "raw_data"},
 )
 def teams_matches(teams_info: pd.DataFrame) -> Output:
     all_teams_matches_df = pd.DataFrame()
@@ -61,17 +60,17 @@ def teams_matches(teams_info: pd.DataFrame) -> Output:
 @multi_asset(
     ins={
         "teams_matches": AssetIn(
-            metadata={"input_query": "SELECT match_id FROM teams_matches"}
+            metadata={"input_query": "SELECT match_id FROM raw_data.teams_matches"}
         )
     },
     outs={
         "matches_statistics": AssetOut(
             io_manager_key="postgres_io_manager_raw_soccer",
-            metadata={"table": "matches_statistics"},
+            metadata={"table": "matches_statistics", "schema": "raw_data"},
         ),
         "matches_info": AssetOut(
             io_manager_key="postgres_io_manager_raw_soccer",
-            metadata={"table": "matches_info"},
+            metadata={"table": "matches_info", "schema": "raw_data"},
         ),
     },
 )
