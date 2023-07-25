@@ -16,7 +16,7 @@ logger = get_dagster_logger()
 
 
 @asset(
-    io_manager_key="postgres_io_manager_raw_soccer", metadata={"table": "TEAMS_INFO"}
+    io_manager_key="postgres_io_manager_raw_soccer", metadata={"table": "teams_info"}
 )
 def teams_info() -> Output:
     teams_df = teams.scrape(LEAGUE_NAME)
@@ -34,7 +34,7 @@ def teams_info() -> Output:
         )
     },
     metadata={
-        "table": "TEAMS_MATCHES",
+        "table": "teams_matches",
     },
 )
 def teams_matches(teams_info: pd.DataFrame) -> Output:
@@ -67,11 +67,11 @@ def teams_matches(teams_info: pd.DataFrame) -> Output:
     outs={
         "matches_statistics": AssetOut(
             io_manager_key="postgres_io_manager_raw_soccer",
-            metadata={"table": "MATCHES_STATISTICS"},
+            metadata={"table": "matches_statistics"},
         ),
         "matches_info": AssetOut(
             io_manager_key="postgres_io_manager_raw_soccer",
-            metadata={"table": "MATCHES_INFO"},
+            metadata={"table": "matches_info"},
         ),
     },
 )
