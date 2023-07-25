@@ -1,0 +1,3 @@
+CREATE SCHEMAS raw_data;
+CREATE SCHEMAS staging;
+CREATE SCHEMAS production;
