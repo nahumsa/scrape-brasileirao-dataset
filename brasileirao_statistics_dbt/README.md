@@ -7,6 +7,22 @@ Try running the following commands:
 - dbt test
 
 
+## Sample of the profiles.yml
+
+```yml
+brasileirao_statistics:
+  target: stage
+  outputs:
+    stage:
+      type: postgres
+      host: localhost
+      user: myuser
+      password: mypassword
+      port: 5432
+      dbname: raw_soccer
+      schema: raw_data
+```
+
 ### Resources:
 - Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction)
 - Check out [Discourse](https://discourse.getdbt.com/) for commonly asked questions and answers
