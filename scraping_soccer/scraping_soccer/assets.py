@@ -16,6 +16,7 @@ logger = get_dagster_logger()
 
 
 @asset(
+    group_name="scraping",
     io_manager_key="postgres_io_manager_raw_soccer",
     metadata={"table": "teams_info", "schema": "raw_data"},
 )
@@ -28,6 +29,7 @@ def teams_info() -> Output:
 
 
 @asset(
+    group_name="scraping",
     io_manager_key="postgres_io_manager_raw_soccer",
     ins={
         "teams_info": AssetIn(
@@ -58,6 +60,7 @@ def teams_matches(teams_info: pd.DataFrame) -> Output:
 
 
 @multi_asset(
+    group_name="scraping",
     ins={
         "teams_matches": AssetIn(
             metadata={"input_query": "SELECT match_id FROM raw_data.teams_matches"}
