@@ -13,3 +13,28 @@ sources:
         identifier: matches_stats
       - name: matches_info 
         identifier: matches_info
+
+models:
+  - name: matches
+    columns:
+      - name: match_id
+        tests:
+          - not_null:
+              config:
+                stored_failures: true
+      - name: field_command
+        tests:
+          - accepted_values:
+              values: ['home', 'away']
+              config:
+                stored_failures: true
+      - name: score
+        tests:
+          - not_null:
+              config:
+                stored_failures: true
+      - name: team_id
+        tests:
+          - not_null:
+              config:
+                stored_failures: true
