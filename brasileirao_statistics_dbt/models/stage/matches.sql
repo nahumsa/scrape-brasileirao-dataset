@@ -5,14 +5,7 @@ with MATCHES as (
     match_id,
     field_command,
     score,
-    (
-      SELECT
-        team_id
-      FROM
-        {{ source('raw', 'teams_info')}}
-      WHERE
-        name = REPLACE(unaccent(LOWER(team)), ' ', '-')
-    )
+    {{ team_id_from_team_name() }} as team_id
   FROM {{ source('raw', 'matches_info')}}
 )
 select *
