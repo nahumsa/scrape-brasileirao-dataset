@@ -9,8 +9,8 @@ sources:
         identifier: teams_info
       - name: teams_matches
         identifier: teams_matches
-      - name: matches_stats 
-        identifier: matches_stats
+      - name: matches_statistics 
+        identifier: matches_statistics
       - name: matches_info 
         identifier: matches_info
 
@@ -34,6 +34,28 @@ models:
               config:
                 stored_failures: true
       - name: team_id
+        tests:
+          - not_null:
+              config:
+                stored_failures: true
+  - name: statistics
+    columns:
+      - name: match_id
+        tests:
+          - not_null:
+              config:
+                stored_failures: true
+      - name: team_id
+        tests:
+          - not_null:
+              config:
+                stored_failures: true
+      - name: stat_value
+        tests:
+          - not_null:
+              config:
+                stored_failures: true
+      - name: stat_name
         tests:
           - not_null:
               config:
