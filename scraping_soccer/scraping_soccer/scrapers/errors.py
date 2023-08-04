@@ -1,0 +1,2 @@
+class GetScoreError(Exception):
+    pass

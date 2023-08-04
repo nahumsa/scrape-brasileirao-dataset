@@ -1,18 +1,28 @@
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+from dagster import get_dagster_logger
 
 BASE_URL = "https://www.espn.com.br"
+logger = get_dagster_logger()
 
 def extract_match_ids(relative_url: str) -> int:
-    match_id = relative_url.split("/")[-1]
+    try:
+        match_id = relative_url.split("/")[-1]
+    except IndexError as error:
+        raise ValueError("Unable to get match_id") from error
+    
     return int(match_id)
 
 def scrape(team_id: int, league_name: str, season: int) -> pd.DataFrame:
     results_url = (
         f"/futebol/time/resultados/_/id/{team_id}/liga/{league_name}/temporada/{season}"
     )
-
+    
+    logger.info(
+        f"getting matches for team_id={team_id} league_name={league_name} season={season}"
+    )
+    
     response = requests.get(BASE_URL + results_url)
     html_content = response.content
 
@@ -27,7 +37,6 @@ def scrape(team_id: int, league_name: str, season: int) -> pd.DataFrame:
 
     for link in links:
         match_url = link.get("href")
-        # TODO: remove duplicated entries
         team_match_list.append(
             {
                 "url": BASE_URL +  match_url,

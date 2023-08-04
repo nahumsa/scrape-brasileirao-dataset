@@ -4,10 +4,13 @@ from enum import Enum
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+from dagster import get_dagster_logger
+from .errors import GetScoreError
 
 BASE_URL = "https://www.espn.com.br"
 
-
+logger = get_dagster_logger()
+ 
 def get_numbers_from_string(text: str) -> int:
     try:
         return int(re.findall(r"\d+", text)[0])
@@ -33,8 +36,11 @@ def get_score_from_match(soup: BeautifulSoup) -> tuple[int, int]:
         "div",
         class_="Gamestrip__ScoreContainer flex flex-column items-center justify-center relative",  # noqa
     )
-
-    home_score, away_score = [element.text for element in scores]
+    try:
+        home_score, away_score = [element.text for element in scores]
+    except AttributeError as error:
+        logger.error("Unable to get score")
+        raise GetScoreError() from error
 
     home_score = get_numbers_from_string(home_score)
     away_score = get_numbers_from_string(away_score)
@@ -95,6 +101,7 @@ def get_shot_stats(
 
 
 def scrape(match_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
+    logger.info(f"getting data from match_id {match_id}")
     match_url = f"/futebol/partida/_/jogoId/{match_id}"
     response = requests.get(BASE_URL + match_url)
     html_content = response.content
