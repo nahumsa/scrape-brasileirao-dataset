@@ -5,12 +5,14 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from dagster import get_dagster_logger
+
 from .errors import GetScoreError
 
 BASE_URL = "https://www.espn.com.br"
 
 logger = get_dagster_logger()
- 
+
+
 def get_numbers_from_string(text: str) -> int:
     try:
         return int(re.findall(r"\d+", text)[0])
@@ -55,7 +57,7 @@ def get_stats_table(
         table = div_table.find("table")
         data = []
         if table:
-            rows = table.find_all("tr")  # noqa
+            rows = table.find_all("tr")
             for row in rows:
                 columns = row.find_all("td")
                 if columns:
@@ -88,9 +90,10 @@ def get_possesion_stats(
 def get_shot_stats(
     soup: BeautifulSoup, team_field_command: TeamFieldCommandEnum
 ) -> tuple[int, int]:
-    shots_scraped_string: str = soup.find(  # noqa
+    shots_scraped_string: str = soup.find(
         "div", class_=f"Shots__col__target Shots__col__target--{team_field_command}"
     ).text
+
     try:
         kicks, kicks_on_goal = re.findall(r"\d+", shots_scraped_string)
 
@@ -103,7 +106,13 @@ def get_shot_stats(
 def scrape(match_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     logger.info(f"getting data from match_id {match_id}")
     match_url = f"/futebol/partida/_/jogoId/{match_id}"
-    response = requests.get(BASE_URL + match_url)
+    response = requests.get(
+        BASE_URL + match_url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"  # noqa
+        },
+    )
+
     html_content = response.content
 
     soup = BeautifulSoup(html_content, "html.parser")

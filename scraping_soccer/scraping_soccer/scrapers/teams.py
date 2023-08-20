@@ -8,8 +8,10 @@ from pydantic import BaseModel
 BASE_URL = "https://www.espn.com.br"
 LEAGUE_URL_PATH = "/soccer/teams/_/league/"
 
+
 def convert_basemodel_to_df(model_list: list[BaseModel]) -> pd.DataFrame:
     return pd.DataFrame([model.dict() for model in model_list])
+
 
 class Team(BaseModel):
     team_id: int
@@ -17,19 +19,31 @@ class Team(BaseModel):
 
 
 def get_team_page_url_set(url: str) -> set[str]:
-    response = requests.get(url)
+    response = requests.get(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"  # noqa
+        },
+    )
+
+    if response.status_code != 200:
+        raise ValueError("Unable to get data for this url")
+
     html_content = response.content
 
     soup = BeautifulSoup(html_content, "html.parser")
 
     links = soup.find_all(
-        "a", href=lambda href: href and href.startswith("/futebol/time/_/id/")
+        "a",
+        href=lambda href: href and href.startswith("/futebol/time/_/id/"),  # type: ignore
     )
 
     # Extract the href attribute from each link and print them
     all_link_teams = set()
+
     for link in links:
         all_link_teams.add(link.get("href"))
+
     return all_link_teams
 
 
