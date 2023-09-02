@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
@@ -67,4 +65,4 @@ def scrape(league_name: str) -> pd.DataFrame:
 if __name__ == "__main__":
     LEAGUE_NAME = "bra.1"
     teams_df = scrape(LEAGUE_NAME)
-    teams_df.to_csv(Path(__file__).parents[1] / "teams.csv", index=False)
+    print(teams_df)

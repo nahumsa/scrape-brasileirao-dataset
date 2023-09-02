@@ -50,57 +50,24 @@ def get_score_from_match(soup: BeautifulSoup) -> tuple[int, int]:
 
 
 def get_stats_table(
-    soup: BeautifulSoup, columns_name: list[str] = ["home", "stat_name", "away"]
+    soup: BeautifulSoup, columns_name: list[str] = ["stat_name", "home", "away"]
 ) -> pd.DataFrame:
-    div_table = soup.find("div", "Table__Scroller")
+    div_table = soup.find("div", class_="eZKk aoVn Shbr")
+    data = []
+
     if div_table:
-        table = div_table.find("table")
-        data = []
-        if table:
-            rows = table.find_all("tr")
-            for row in rows:
-                columns = row.find_all("td")
-                if columns:
-                    row_data = [column.text.strip() for column in columns]
-                    data.append(row_data)
+        for div in div_table.find_all("div", recursive=False):  # type: ignore
+            data.append([span.text for span in div.find_all("span")])
+        # TODO: find a better way to do this
+        data = data[1:]
+        data[0] = list(filter(lambda x: x != "%", data[0]))
+
     return pd.DataFrame(data, columns=columns_name)
 
 
 class TeamFieldCommandEnum(str, Enum):
     HOME: str = "home"
     AWAY: str = "away"
-
-
-def get_possesion_stats(
-    soup: BeautifulSoup, team_field_command: TeamFieldCommandEnum
-) -> int:
-    possession_scraped_string: str = soup.find(  # noqa
-        "div", class_=f"Possession__stat Possession__stat--{team_field_command.value}"
-    ).text
-
-    try:
-        possesion = re.findall(r"\d+", possession_scraped_string)[0]
-
-        return int(possesion)
-
-    except IndexError as error:
-        raise IndexError("The format for the possession changed") from error
-
-
-def get_shot_stats(
-    soup: BeautifulSoup, team_field_command: TeamFieldCommandEnum
-) -> tuple[int, int]:
-    shots_scraped_string: str = soup.find(
-        "div", class_=f"Shots__col__target Shots__col__target--{team_field_command}"
-    ).text
-
-    try:
-        kicks, kicks_on_goal = re.findall(r"\d+", shots_scraped_string)
-
-    except IndexError as error:
-        raise IndexError("The format for the kick attempts changed") from error
-
-    return int(kicks), int(kicks_on_goal)
 
 
 def scrape(match_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -118,30 +85,6 @@ def scrape(match_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     soup = BeautifulSoup(html_content, "html.parser")
 
     base_stats = get_stats_table(soup)
-    possession_df = pd.DataFrame(
-        [
-            {
-                "home": get_possesion_stats(soup, TeamFieldCommandEnum.HOME),
-                "stat_name": "posse",
-                "away": get_possesion_stats(soup, TeamFieldCommandEnum.AWAY),
-            }
-        ]
-    )
-    shots_df = pd.DataFrame(
-        [
-            {
-                "home": get_shot_stats(soup, TeamFieldCommandEnum.HOME)[0],
-                "stat_name": "chutes",
-                "away": get_shot_stats(soup, TeamFieldCommandEnum.AWAY)[0],
-            },
-            {
-                "home": get_shot_stats(soup, TeamFieldCommandEnum.HOME)[1],
-                "stat_name": "chutes no gol",
-                "away": get_shot_stats(soup, TeamFieldCommandEnum.AWAY)[1],
-            },
-        ]
-    )
-    base_stats = pd.concat([base_stats, possession_df, shots_df])
     home_team_name, away_team_name = get_team_names_from_match(soup)
     home_score, away_score = get_score_from_match(soup)
     match_info_df = pd.DataFrame(
