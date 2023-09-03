@@ -13,6 +13,11 @@ BASE_URL = "https://www.espn.com.br"
 logger = get_dagster_logger()
 
 
+class TeamFieldCommandEnum(str, Enum):
+    HOME: str = "home"
+    AWAY: str = "away"
+
+
 def get_numbers_from_string(text: str) -> int:
     try:
         return int(re.findall(r"\d+", text)[0])
@@ -58,16 +63,18 @@ def get_stats_table(
     if div_table:
         for div in div_table.find_all("div", recursive=False):  # type: ignore
             data.append([span.text for span in div.find_all("span")])
+
         # TODO: find a better way to do this
+        # Ignore name of the teams
         data = data[1:]
+
+        # Clean up empty %
         data[0] = list(filter(lambda x: x != "%", data[0]))
 
+        # tranform data to float format
+        data[0] = [value.strip("%") for value in data[0]]
+
     return pd.DataFrame(data, columns=columns_name)
-
-
-class TeamFieldCommandEnum(str, Enum):
-    HOME: str = "home"
-    AWAY: str = "away"
 
 
 def scrape(match_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -101,6 +108,7 @@ def scrape(match_id: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     home_stats_df = base_stats[["stat_name", "home"]]
     home_stats_df = home_stats_df.rename(columns={"home": "stat_value"})
     home_stats_df["team"] = home_team_name
+
     all_stats_df = pd.concat([home_stats_df, away_stats_df])
     all_stats_df["match_id"] = match_id
     match_info_df["match_id"] = match_id

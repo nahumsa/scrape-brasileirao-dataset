@@ -9,8 +9,27 @@ Esse repositório retira os dados do site `https://espn.com.br` referentes a par
 - [PostgreSQL](https://www.postgresql.org/)
 - [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/)
 
+# Arquitetura
+Como estamos trabalhando com um trabalho em lote (batch) a arquitetura é pensada para suprir a necessidade de atualizar os dados em períodos que são maiores do que segundos (nesse caso, a cada dia). Portanto, escolhi utilizar Dagster para orquestrar o webscraping e as transformações que estão implementadas utilizando o DBT, tendo a seguinte arquitetura:
+
+```mermaid
+flowchart LR
+    subgraph Dagster
+    id1[webpage]  -->|scraping| id2[(raw_data)]
+    id2 -->|DBT| id3[(staging)]
+    id3 -->|DBT| id4[(data mart)]
+    id3 -->|DBT| id5[(data mart)]
+    id3 -->|DBT| id6[(data mart)]
+    id3 -->|DBT| id7[(data mart)]
+    end
+    id4 -.-> id8(superset)
+    id5 -.-> id8
+    id6 -.-> id8
+    id7 -.-> id8
+```
+
 # Database
-Vamos utilizar uma database PostGRESQL para guardar os dados que vão ser retirados do site da forma bruta (raw). Após o armazenamento utilizaremos [DBT](https://www.getdbt.com/) para normalizá-los e fazer cálculos para cada data mart.
+Vamos utilizar uma database [PostgreSQL](https://www.postgresql.org/) para guardar os dados que vão ser retirados do site da forma bruta (raw). Após o armazenamento utilizaremos [DBT](https://www.getdbt.com/) para normalizá-los, guardar em um schema de staging e fazer cálculos para cada data mart.
 
 ## Raw
 ```mermaid
