@@ -103,4 +103,4 @@ erDiagram
 
 ## Dagster
 
-![./images/brasileirao-scraping-dagster.png]
+![dagster dag](./images/brasileirao-scraping-dagster.png)
