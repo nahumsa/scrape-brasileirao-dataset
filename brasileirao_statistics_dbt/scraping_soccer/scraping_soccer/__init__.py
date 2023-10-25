@@ -13,7 +13,7 @@ from dagster_dbt import DbtCliResource
 
 all_assets = load_assets_from_modules([assets])
 scraping_soccer_job = define_asset_job(
-    "scraping_soccer", selection=AssetSelection.groups("scraping")
+    "scraping_soccer", selection=AssetSelection.groups("default")
 )
 
 scraping_soccer_schedule = ScheduleDefinition(
