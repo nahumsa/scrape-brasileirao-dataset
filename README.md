@@ -9,6 +9,7 @@ Esse repositório retira os dados do site `https://espn.com.br` referentes a par
 - [Dagster](https://dagster.io/)
 - [PostgreSQL](https://www.postgresql.org/)
 - [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/)
+- [DBT](https://www.getdbt.com/)
 
 # Arquitetura
 
