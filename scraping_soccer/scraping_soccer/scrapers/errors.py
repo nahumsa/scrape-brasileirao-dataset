@@ -1,2 +1,0 @@
-class GetScoreError(Exception):
-    pass
